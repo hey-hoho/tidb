@@ -303,12 +303,8 @@ func extractStringFromStringSlice(ss []string) string {
 	if len(ss) < 1 {
 		return ""
 	}
-	l := make([]string, len(ss))
-	for _, k := range ss {
-		l = append(l, k)
-	}
-	sort.Strings(l)
-	return strings.Join(l, ",")
+	sort.Strings(ss)
+	return strings.Join(ss, ",")
 }
 
 // extractStringFromUint64Slice helps extract string info from uint64 slice.
