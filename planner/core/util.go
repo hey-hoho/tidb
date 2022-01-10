@@ -303,9 +303,9 @@ func extractStringFromStringSlice(ss []string) string {
 	if len(ss) < 1 {
 		return ""
 	}
-	l := make([]string, 0, len(ss))
-	for k := range ss {
-		l = append(l, fmt.Sprintf(`"%s"`, k))
+	l := make([]string, len(ss))
+	for _, k := range ss {
+		l = append(l, k)
 	}
 	sort.Strings(l)
 	return strings.Join(l, ",")
