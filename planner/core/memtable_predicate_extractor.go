@@ -1481,6 +1481,12 @@ type ColumnsTableExtractor struct {
 	TableName set.StringSet
 	// ColumnName represents all column name we should filter in memtable.
 	ColumnName set.StringSet
+
+	TableSchemaPatterns []string
+
+	TableNamePatterns []string
+
+	ColumnNamePatterns []string
 }
 
 // Extract implements the MemTablePredicateExtractor Extract interface
@@ -1492,10 +1498,18 @@ func (e *ColumnsTableExtractor) Extract(_ sessionctx.Context,
 	remained, tableSchemaSkipRequest, tableSchema := e.extractCol(schema, names, predicates, "table_schema", true)
 	remained, tableNameSkipRequest, tableName := e.extractCol(schema, names, remained, "table_name", true)
 	remained, columnNameSkipRequest, columnName := e.extractCol(schema, names, remained, "column_name", true)
-	e.SkipRequest = columnNameSkipRequest || tableSchemaSkipRequest || tableNameSkipRequest
+	remained, tableSchemaPatterns := e.extractLikePatternCol(schema, names, remained, "table_schema")
+	remained, tableNamePatterns := e.extractLikePatternCol(schema, names, remained, "table_name")
+	remained, columnNamePatterns := e.extractLikePatternCol(schema, names, remained, "column_name")
+	e.SkipRequest =
+		columnNameSkipRequest || tableSchemaSkipRequest || tableNameSkipRequest ||
+			len(columnNamePatterns) > 0 || len(tableSchemaPatterns) > 0 || len(tableNamePatterns) > 0
 	e.ColumnName = columnName
 	e.TableName = tableName
 	e.TableSchema = tableSchema
+	e.TableSchemaPatterns = tableSchemaPatterns
+	e.TableNamePatterns = tableNamePatterns
+	e.ColumnNamePatterns = columnNamePatterns
 	return remained
 }
 
@@ -1512,6 +1526,15 @@ func (e *ColumnsTableExtractor) explainInfo(p *PhysicalMemTable) string {
 	}
 	if len(e.ColumnName) > 0 {
 		r.WriteString(fmt.Sprintf("column_name:[%s], ", extractStringFromStringSet(e.ColumnName)))
+	}
+	if len(e.TableSchemaPatterns) > 0 {
+		r.WriteString(fmt.Sprintf("table_schema_pattern:[%s], ", extractStringFromStringSlice(e.TableSchemaPatterns)))
+	}
+	if len(e.TableNamePatterns) > 0 {
+		r.WriteString(fmt.Sprintf("table_name_pattern:[%s], ", extractStringFromStringSlice(e.TableNamePatterns)))
+	}
+	if len(e.ColumnNamePatterns) > 0 {
+		r.WriteString(fmt.Sprintf("column_name_pattern:[%s], ", extractStringFromStringSlice(e.ColumnNamePatterns)))
 	}
 	// remove the last ", " in the message info
 	s := r.String()
